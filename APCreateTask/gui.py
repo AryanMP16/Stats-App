@@ -4,6 +4,7 @@
 import tkinter as tk #importing main GUI library
 from random import randint #importing library for generating random integers. Randomness is a key element in statistics.
 from scipy.stats import norm #importing library for functions pertaining to distribution curves
+from scipy.stats import t #importing library for functions pertaining to t curves
 wringus = tk.Tk() #defined main window as 'wringus'
 
 bgu = tk.PhotoImage(file = "/Users/aryanm/Documents/GitHub/Stats-App/APCreateTask/1440x900background.png") #background picture
@@ -24,21 +25,22 @@ confidenceLevelEntry = tk.Entry(wringus, textvariable=x)
 StandardDevEntry = tk.Entry(wringus, textvariable=y)
 
 cIntLabel = tk.Label(wringus, text = "", font=("Proxima Nova", 25), fg = "white") #defining some labels up here because they need to be accessed before all other labels do
-SigTestLabel = tk.Label(wringus, text = "", font=("Proxima Nova", 25), fg = "white")
+SigTestLabel = tk.Label(wringus, text = "", font=("Proxima Nova", 15), fg = "white")
+SigTestLabelSTATE = tk.Label(wringus, text = "", font=("Proxima Nova", 15), fg = "white")
+SigTestLabelPLAN = tk.Label(wringus, text = "", font=("Proxima Nova", 15), fg = "white")
+SigTestLabelDO = tk.Label(wringus, text = "", font=("Proxima Nova", 15), fg = "white")
+SigTestLabelCONCLUDE = tk.Label(wringus, text = "", font=("Proxima Nova", 15), fg = "white")
 SRSsimLabel = tk.Label(wringus, text = "", font=("Proxima Nova", 25), fg = "white")
 
 def returnHaGreater(): #of the alternative hypothesis buttons in the significance testing window, clicking THIS button will indicate that the user wants to calculate alternative hypothesis > null hypothesis
-    print("greater")
     global HaVar
     HaVar = 'greater'
 
 def returnHaLess(): # " alternative hypothesis < null hypothesis
-    print("less")
     global HaVar
     HaVar = 'less'
 
 def returnHaNotEqual(): # " alternative hypothesis ≠ null hypothesis
-    print("not equal")
     global HaVar
     HaVar = 'not equal'
 
@@ -87,14 +89,7 @@ def entryCollectMean(): #collect input entries for confidence interval of means 
     pointEstimate = vNum #statistical calculations to determine critical value, point estimate, and standard error, the 3 components that make up a confidence interval
     standardDeviation = yNum
     standardError = (standardDeviation/(wNum**(1/2)))
-    if xNum == 95:
-        criticalValue = 1.9599
-    elif xNum == 99:
-        criticalValue = 2.5758
-    elif xNum == 90:
-        criticalValue = 1.64485
-    else:
-        criticalValue = norm.ppf(xNum/100)
+    criticalValue = -t.ppf((100-xNum)/200, wNum-1, loc=0, scale=1)
 ##################################################################
     cIntLow = pointEstimate - (criticalValue * standardError) #this formula is in the AP Statistics official formula sheet
     cIntHigh = pointEstimate + (criticalValue * standardError) # ^^
@@ -107,19 +102,20 @@ def entryCollectMean(): #collect input entries for confidence interval of means 
     cIntLabel.config(bg="#1c1c1c") #making calculation display label's background the same color as the background image
     cIntLabel.pack()
 
+SPDCyORn = False #default for whether or not we want a State-Plan-Do-Conclude is false. The following function can make it true.
+
+def SPDCfuncDisplay():
+    global SPDCyORn
+    SPDCyORn = True
+
 def entryCollectSigTestProportion(): #collect input entries for significance testing of proportions window
+    print(f"{SPDCyORn}\n\n")
     #collect text data from all 4 text input boxes:
     vNum = float(v.get()) #Ho (Null Hypothesis)
     wNum = float(w.get()) #Sample Size
     xNum = float(x.get()) #Significance Level
     yNum = float(y.get()) #Ha Evidence
-
-    print(f"Ho (Null Hypothesis): {vNum}") #printing values for debugging purposes
-    print(f"Ha {HaVar} Ho")
-    print(f"Sample Size: {wNum}")
-    print(f"Significance Level: {xNum}")
-    print(f"Evidence for Ha: p^ = {yNum}")
-
+    
     NullHyp = vNum #renaming variables for convenience and synonymity with formulas
     sampleSize = wNum
     HaEvidence = yNum
@@ -127,8 +123,6 @@ def entryCollectSigTestProportion(): #collect input entries for significance tes
 
     standardError = ((NullHyp*(1-NullHyp))/sampleSize)**(1/2) #this formula is in the AP Statistics official formula sheet
     ZScore = (HaEvidence - NullHyp)/standardError # ^^
-
-    print(f"\n{ZScore}\n") #printing for debugging purposes
     
     PValue = 1-(norm.cdf(ZScore)) #using scipy.stats library to perform a normalcdf function
 
@@ -142,14 +136,41 @@ def entryCollectSigTestProportion(): #collect input entries for significance tes
     
     PValueRounded = ("%.3f" % PValue) #rounding so that the user doesn't have to strain their eyes staring at a 20-digit number
 
-    print(PValue) #printing for debugging purposes
-    if PValue > significanceLevel: #conditional statement testing whether to reject or fail to reject the null hypothesis. Conditional stated in AP Statistics textbook
-        SigTestLabel.config(text = f"For the test ||  Ho = {NullHyp} versus Ha {HaToSymbol} {NullHyp}  ||, Fail To Reject Ho\nP-Value: {PValueRounded}") #display results (reject/fail to reject) to user
-    else:
-        SigTestLabel.config(text = f"For the test ||  Ho = {NullHyp} versus Ha {HaToSymbol} {NullHyp}  ||, Reject Ho\nP-Value: {PValueRounded}") # ^^
+    SPDCfunc(NullHyp, HaEvidence, significanceLevel, PValueRounded, sampleSize)
 
-    SigTestLabel.config(bg="#1c1c1c")
-    SigTestLabel.pack()
+    if SPDCyORn == False:
+        if PValue > significanceLevel: #conditional statement testing whether to reject or fail to reject the null hypothesis. Conditional stated in AP Statistics textbook
+            SigTestLabel.config(text = f"For the test ||  Ho = {NullHyp} versus Ha {HaToSymbol} {NullHyp}  ||, Fail To Reject Ho\nP-Value: {PValueRounded}") #display results (reject/fail to reject) to user
+        else:
+            SigTestLabel.config(text = f"For the test ||  Ho = {NullHyp} versus Ha {HaToSymbol} {NullHyp}  ||, Reject Ho\nP-Value: {PValueRounded}") # ^^
+
+        SigTestLabel.config(bg="#1c1c1c")
+        SigTestLabel.pack()
+
+        print(f"{stateWriting}{planWriting}{doWriting}{concludeWriting}")
+    else:
+        for i in range(len(forgetListNONMenuPages)): #increment through forgetList, forgetting every item from the menu page
+            forgetListNONMenuPages[i].pack_forget()
+        for i in range(len(forgetList)): #increment through forgetList, forgetting every item from the menu page
+            forgetList[i].pack_forget()
+        space6.pack()
+        space6.config(bg="#1c1c1c")
+
+        SigTestLabelSTATE.config(bg="#1c1c1c")
+        SigTestLabelSTATE.config(text = stateWriting)
+        SigTestLabelSTATE.place(x=150,y=75)
+
+        SigTestLabelPLAN.config(bg="#1c1c1c")
+        SigTestLabelPLAN.config(text = planWriting)
+        SigTestLabelPLAN.place(x=165,y=140)
+
+        SigTestLabelDO.config(bg="#1c1c1c")
+        SigTestLabelDO.config(text = doWriting)
+        SigTestLabelDO.place(x=315,y=255)
+
+        SigTestLabelCONCLUDE.config(bg="#1c1c1c")
+        SigTestLabelCONCLUDE.config(text = concludeWriting)
+        SigTestLabelCONCLUDE.place(x=475,y=320)
 
 def entryCollectSRSsim(): #collect input entries for significance testing of proportions window
     rLow = float(v.get()) #collect text data from all 4 text input boxes
@@ -193,19 +214,45 @@ def entryCollectSRSsim(): #collect input entries for significance testing of pro
     SRSsimLabel.config(bg="#1c1c1c")
     SRSsimLabel.pack()
 
+def SPDCfunc(Ho, HaEv, alpha, PVal, n):
+    if HaVar == 'less': #conditional statement checking which button is pressed. Will always take most recent value due to mainloop at the end of the code
+        HaToSymbol = '<'
+    elif HaVar == 'greater':
+        HaToSymbol = '>'
+    elif HaVar == 'not equal':
+        HaToSymbol = '≠'
+
+    global stateWriting
+    stateWriting = f"STATE:\tHo = {Ho}\n\t\t\t\t\tHa {HaToSymbol} {Ho}\tEvidence: p^ = {HaEv}. Testing @ alpha = {alpha}\n\n"
+
+    #check for normal condition:
+    metVar = ""
+    if ((n*Ho) >= 10) and ((n*(1-Ho)) >= 10):
+        metVar = f"Met; nP = {(n*Ho)}, n(1-P) = {n*(1-Ho)}"
+    else:
+        metVar = f"Met; nP = {(n*Ho)}, n(1-P) = {n*(1-Ho)}"
+
+    global planWriting
+    planWriting = f"PLAN:\t2-sample Z test for p\n\tChecks:\n\t\t\t\t\t1. Random: Assuming sample is random\n\t\t\t\t\t2. Normal: {metVar}\n\t\t\t\t\t\t3. Independence: assuming population is >= {n*10}\n\n"
+
+    global doWriting
+    doWriting = f"DO:\t2-prop Z test (calculator)\n\t\t\tPo = {Ho}, x = {Ho*n}, n = {n}\tP-val = {PVal}\n\n"
+
+    global concludeWriting
+    if float(PVal) > float(alpha): #conditional statement testing whether to reject or fail to reject the null hypothesis. Conditional stated in AP Statistics textbook
+        concludeWriting = f"CONC.:\tFor the test ||  Ho = {Ho} versus Ha {HaToSymbol} {Ho}  ||, Fail To Reject Ho\n\tP-Value: {PVal}" #display results (reject/fail to reject) to user
+    else:
+        concludeWriting = f"CONC.:\tFor the test ||  Ho = {Ho} versus Ha {HaToSymbol} {Ho}  ||, Reject Ho\n\tP-Value: {PVal}" # ^^
+
 def redBtnCommand(): #button takes you to the confidence interval of proportions page
     v.set("") #initialize all text input boxes to have nothing in them when created
     w.set("")
     x.set("")
     y.set("")
-    frame.pack_forget() #remove unnecessary elements from menu screen
-    greenbutton.pack_forget()
-    redbutton.pack_forget()
-    space3.pack_forget()
-    space7.pack_forget()
-    bluebutton.pack_forget()
-    space8.pack_forget()
-    yellowbutton.pack_forget()
+
+    for i in range(len(forgetListNONMenuPages)): #increment through forgetList, forgetting every item from the menu page
+        forgetListNONMenuPages[i].pack_forget()
+
     labeL.pack() #add and configurate elements for aesthetic purposes
     labeL.config(bg="#1c1c1c")
     space1.config(bg="#1c1c1c")
@@ -226,14 +273,10 @@ def greenBtnCommand(): #button takes you to the confidence interval of means pag
     w.set("")
     x.set("")
     y.set("")
-    frame.pack_forget() #remove unnecessary elements from menu screen
-    greenbutton.pack_forget()
-    redbutton.pack_forget()
-    space3.pack_forget()
-    space7.pack_forget()
-    bluebutton.pack_forget()
-    space8.pack_forget()
-    yellowbutton.pack_forget()
+    
+    for i in range(len(forgetListNONMenuPages)): #increment through forgetList, forgetting every item from the menu page
+        forgetListNONMenuPages[i].pack_forget()
+    
     labeL.pack() #add and configurate elements for aesthetic purposes
     labeL.config(bg="#1c1c1c")
     space1.config(bg="#1c1c1c")
@@ -259,13 +302,8 @@ def blueBtnCommand(): #button takes you to the significance testing of proportio
     x.set("")#Sig Level
     y.set("")#Ha Evidence
 
-    greenbutton.pack_forget() #remove unnecessary elements from menu screen
-    redbutton.pack_forget()
-    space3.pack_forget()
-    space7.pack_forget()
-    bluebutton.pack_forget()
-    space8.pack_forget()
-    yellowbutton.pack_forget()
+    for i in range(len(forgetListNONMenuPages)): #increment through forgetList, forgetting every item from the menu page
+        forgetListNONMenuPages[i].pack_forget()
 
     labeL2.pack() #add and configurate elements for aesthetic purposes
     labeL2.config(bg="#1c1c1c")
@@ -292,6 +330,9 @@ def blueBtnCommand(): #button takes you to the significance testing of proportio
     EnterASignificanceLevel.config(bg="#1c1c1c")
     confidenceLevelEntry.pack()
     space1.pack()
+    SPDCButton.pack()
+    extraSpace1.pack()
+    extraSpace1.config(bg="#1c1c1c")
     enterbuttonSTP.pack() # <-- adding enter button
 
 def yellowBtnCommand(): #button takes you to the SRS computer simulation (replacing Table D) page
@@ -301,13 +342,8 @@ def yellowBtnCommand(): #button takes you to the SRS computer simulation (replac
     x.set("")#rWantLow
     y.set("")#rWantUp
 
-    greenbutton.pack_forget() #remove unnecessary elements from menu screen
-    redbutton.pack_forget()
-    space3.pack_forget()
-    space7.pack_forget()
-    bluebutton.pack_forget()
-    space8.pack_forget()
-    yellowbutton.pack_forget()
+    for i in range(len(forgetListNONMenuPages)): #increment through forgetList, forgetting every item from the menu page
+        forgetListNONMenuPages[i].pack_forget()
 
     labeL3.pack() #add text input boxes
     labeL3.config(bg="#1c1c1c")
@@ -331,17 +367,15 @@ def yellowBtnCommand(): #button takes you to the SRS computer simulation (replac
     space1.pack()
     enterbuttonSRSsim.pack() # <-- adding enter button
 
-def backCommand(): #button takes you back to the menu page
-    #forget all other spaces so that we can add them back to the page in the proper order. Tkinter is order-sensitive.
-    space8.pack_forget()
-    yellowbutton.pack_forget()
-    space2.pack_forget()
-    space3.pack_forget()
-    space4.pack_forget()
-    space5.pack_forget()
-    space6.pack_forget()
-    space7.pack_forget()
-    
+def backCommand():
+    for i in range(len(forgetList)): #increment through forgetList, forgetting every item from the menu page
+        forgetList[i].pack_forget()
+
+    SigTestLabelSTATE.place_forget()
+    SigTestLabelPLAN.place_forget()
+    SigTestLabelDO.place_forget()
+    SigTestLabelCONCLUDE.place_forget()
+
     space2.pack() #adding back all labels in the correct order
     space3.pack() #Menu page title
     space4.pack()
@@ -355,37 +389,14 @@ def backCommand(): #button takes you back to the menu page
     space8.pack()
     yellowbutton.pack()
 
-    enterbuttonSRSsim.pack_forget() #getting rid of unnecessary elements from windows other than the menu page
-    EnterArLow.pack_forget()
-    EnterArUp.pack_forget()
-    EnterArWantLow.pack_forget()
-    EnterArWantUp.pack_forget()
-    SRSsimLabel.pack_forget()
-
-    SigTestLabel.pack_forget()
-    enterbuttonSTP.pack_forget()
-    EnterEvidenceForHa.pack_forget()
-    EnterAHo.pack_forget()
-    EnterASignificanceLevel.pack_forget()
-    frame.pack_forget()
-    labeL2.pack_forget()
-    labeL3.pack_forget()
-    labeL.pack_forget()
-    space1.pack_forget()
-    EnterAProportion.pack_forget()
-    EnterAStandardDev.pack_forget()
-    EnterAMean.pack_forget()
-    EnterASampleSize.pack_forget()
-    EnterAConfidenceLevel.pack_forget()
-    cIntLabel.pack_forget()
-
-    pointEstimateEntry.pack_forget()
-    sampleSizeEntry.pack_forget()
-    confidenceLevelEntry.pack_forget()
-    StandardDevEntry.pack_forget()
-
-    enterbuttonP.pack_forget()
-    enterbuttonM.pack_forget()
+####################################################################################################################################################
+labelSTATE = tk.Label(wringus, text = "", font=("Proxima Nova", 15), fg = "white")
+labelPLAN = tk.Label(wringus, text = "", font=("Proxima Nova", 15), fg = "white")
+labelDO = tk.Label(wringus, text = "", font=("Proxima Nova", 15), fg = "white")
+labelCONCLUDE = tk.Label(wringus, text = "", font=("Proxima Nova", 15), fg = "white")
+####################################################################################################################################################
+SPDCButton = tk.Button(wringus, text = "State-Plan-Do-Conclude", highlightbackground="#35f4a6", font=("Proxima Nova", 15), command=SPDCfuncDisplay)
+extraSpace1 = tk.Label(wringus, text = "", font = ("Proxima Nova", 7))
 ####################################################################################################################################################
 labeL = tk.Label(wringus, text = "Confidence Interval", font=("Proxima Nova", 25), fg = "white") #creating titles for various pages
 labeL2 = tk.Label(wringus, text = "Significance Test", font=("Proxima Nova", 25), fg = "white")
@@ -467,5 +478,8 @@ quitButton.place(x=1391, y=2)
 labelOfAppreciation = tk.Label(wringus, text = "A Special Thanks to Ms. R. Peterson", fg="white", font=("Proxima Nova", 12)) #Thanking my AP Statistics teacher for giving me the stats knowledge to program this applicaiton
 labelOfAppreciation.config(bg="#1c1c1c")
 labelOfAppreciation.place(x=610, y=750)
+
+forgetList = [space8, yellowbutton, space2, space3, space4, space5, space6, space7, enterbuttonSRSsim, EnterArLow, EnterArUp, EnterArWantLow, EnterArWantUp, SRSsimLabel, SigTestLabel, enterbuttonSTP, EnterEvidenceForHa, EnterAHo, EnterASignificanceLevel, frame, labeL2, labeL3, labeL, space1, EnterAProportion, EnterAStandardDev, EnterAMean, EnterASampleSize, EnterAConfidenceLevel, cIntLabel, pointEstimateEntry, sampleSizeEntry, confidenceLevelEntry, StandardDevEntry, enterbuttonP, enterbuttonM, labelSTATE, labelPLAN, labelDO, labelCONCLUDE, SPDCButton, extraSpace1, SigTestLabelCONCLUDE, SigTestLabelPLAN, SigTestLabelDO, SigTestLabelSTATE, SigTestLabel]
+forgetListNONMenuPages = [greenbutton, redbutton, space3, space7, bluebutton, space8, yellowbutton, SPDCButton, SigTestLabelCONCLUDE, SigTestLabelPLAN, SigTestLabelDO, SigTestLabelSTATE, SigTestLabel]
 
 tk.mainloop() #Tkinter mainloop functions the same as a while true, running all of the code constantly.
