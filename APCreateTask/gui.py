@@ -136,7 +136,7 @@ def entryCollectSigTestProportion(): #collect input entries for significance tes
     
     PValueRounded = ("%.3f" % PValue) #rounding so that the user doesn't have to strain their eyes staring at a 20-digit number
 
-    SPDCfunc(NullHyp, HaEvidence, significanceLevel, PValueRounded, sampleSize)
+    SPDCfunc(vNum, yNum, xNum, PValueRounded, wNum)
 
     if SPDCyORn == False:
         if PValue > significanceLevel: #conditional statement testing whether to reject or fail to reject the null hypothesis. Conditional stated in AP Statistics textbook
@@ -147,7 +147,6 @@ def entryCollectSigTestProportion(): #collect input entries for significance tes
         SigTestLabel.config(bg="#1c1c1c")
         SigTestLabel.pack()
 
-        print(f"{stateWriting}{planWriting}{doWriting}{concludeWriting}")
     else:
         for i in range(len(forgetListNONMenuPages)): #increment through forgetList, forgetting every item from the menu page
             forgetListNONMenuPages[i].pack_forget()
@@ -171,6 +170,9 @@ def entryCollectSigTestProportion(): #collect input entries for significance tes
         SigTestLabelCONCLUDE.config(bg="#1c1c1c")
         SigTestLabelCONCLUDE.config(text = concludeWriting)
         SigTestLabelCONCLUDE.place(x=475,y=320)
+
+    SPDCfunc(0.08, 0.09, 0.05, 0.003, 20) #function was not collecting P-value properly, so this is here to debug and test to make sure it does by printing it to the serial console
+    print(f"{stateWriting}{planWriting}{doWriting}{concludeWriting}")
 
 def entryCollectSRSsim(): #collect input entries for significance testing of proportions window
     rLow = float(v.get()) #collect text data from all 4 text input boxes
@@ -226,11 +228,19 @@ def SPDCfunc(Ho, HaEv, alpha, PVal, n):
     stateWriting = f"STATE:\tHo = {Ho}\n\t\t\t\t\tHa {HaToSymbol} {Ho}\tEvidence: p^ = {HaEv}. Testing @ alpha = {alpha}\n\n"
 
     #check for normal condition:
+    metPoints = 0
+    checks = [((n*Ho) >= 10), ((n*(1-Ho)) >= 10)]
+    for q in range(len(checks)):
+        if checks[q] == True:
+            metPoints+=1
+        elif checks[q] == False:
+            metPoints+=0
+
     metVar = ""
-    if ((n*Ho) >= 10) and ((n*(1-Ho)) >= 10):
+    if metPoints == 2:
         metVar = f"Met; nP = {(n*Ho)}, n(1-P) = {n*(1-Ho)}"
     else:
-        metVar = f"Met; nP = {(n*Ho)}, n(1-P) = {n*(1-Ho)}"
+        metVar = f"Not Met; nP = {(n*Ho)}, n(1-P) = {n*(1-Ho)}"
 
     global planWriting
     planWriting = f"PLAN:\t2-sample Z test for p\n\tChecks:\n\t\t\t\t\t1. Random: Assuming sample is random\n\t\t\t\t\t2. Normal: {metVar}\n\t\t\t\t\t\t3. Independence: assuming population is >= {n*10}\n\n"
@@ -239,9 +249,9 @@ def SPDCfunc(Ho, HaEv, alpha, PVal, n):
     doWriting = f"DO:\t2-prop Z test (calculator)\n\t\t\tPo = {Ho}, x = {Ho*n}, n = {n}\tP-val = {PVal}\n\n"
 
     global concludeWriting
-    if float(PVal) > float(alpha): #conditional statement testing whether to reject or fail to reject the null hypothesis. Conditional stated in AP Statistics textbook
+    if float(PVal) >= float(alpha): #conditional statement testing whether to reject or fail to reject the null hypothesis. Conditional stated in AP Statistics textbook
         concludeWriting = f"CONC.:\tFor the test ||  Ho = {Ho} versus Ha {HaToSymbol} {Ho}  ||, Fail To Reject Ho\n\tP-Value: {PVal}" #display results (reject/fail to reject) to user
-    else:
+    elif float(PVal) < float(alpha):
         concludeWriting = f"CONC.:\tFor the test ||  Ho = {Ho} versus Ha {HaToSymbol} {Ho}  ||, Reject Ho\n\tP-Value: {PVal}" # ^^
 
 def redBtnCommand(): #button takes you to the confidence interval of proportions page
